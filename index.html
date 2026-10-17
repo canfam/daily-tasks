@@ -1,19 +1,154 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Home Reset"><meta name="theme-color" content="#f6f3ed"><title>Home Reset</title><style>
-:root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#28332d;background:#f6f3ed}*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}main{max-width:650px;margin:auto;padding:22px 18px 60px}header{display:flex;justify-content:space-between;align-items:start;gap:10px}h1{font-size:30px;letter-spacing:-1px;margin:8px 0 5px}p{color:#66736a;line-height:1.45;margin:4px 0 18px}.pill{font-size:12px;background:#e2e9df;border-radius:50px;padding:8px 11px;white-space:nowrap}.week{font-size:13px;color:#68766d;margin:8px 0 16px}.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:18px}.day{border:0;background:#e8e9e2;border-radius:12px;padding:11px 0;color:#48564c;font-size:12px;font-weight:700}.day.active{background:#365c49;color:white}.day small{display:block;font-size:10px;margin-top:4px;opacity:.75}.section{background:#fff;border:1px solid #e7e8e0;border-radius:18px;padding:17px;margin-bottom:13px;box-shadow:0 3px 14px #263a2810}h2{font-size:17px;margin:0 0 5px}.hint{font-size:12px;color:#79857c;margin-bottom:13px}.task{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid #eff0eb;cursor:pointer}.task:first-of-type{border-top:0}.task input{width:23px;height:23px;accent-color:#365c49;flex-shrink:0;margin:0}.task .name{font-size:15px;line-height:1.35}.task .who{font-size:12px;color:#79857c;margin-top:3px}.task:has(input:checked) .name{text-decoration:line-through;color:#8d988f}.progress{height:8px;border-radius:10px;background:#e7ebe4;overflow:hidden;margin:12px 0}.fill{height:100%;background:#5d9271;transition:width .2s}.bottom{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:12px;color:#758177}button.link{background:none;border:0;color:#365c49;font-weight:700;font-size:12px;padding:8px}footer{color:#7a857c;font-size:12px;line-height:1.5;margin-top:20px}.empty{font-size:13px;color:#66736a;padding:8px 0}.note{background:#e9efe7;border-radius:12px;padding:12px;font-size:13px;line-height:1.4;margin-top:14px} @media(prefers-color-scheme:dark){:root{background:#1c241e;color:#e8eee8}.section{background:#28332b;border-color:#3c493f}.day{background:#344136;color:#e8eee8}.day.active{background:#7ca78a;color:#132116}.pill,.note{background:#354638}.task{border-color:#3b473d}.progress{background:#3c493f}p,.hint,.week,footer{color:#aab9ad}}
-</style></head><body><main><header><div><h1>Home Reset 🌿</h1><p>Just enough to make home feel lighter.</p></div><span class="pill" id="weekBadge">Weekly reset</span></header><div class="week" id="weekRange"></div><nav class="days" id="days" aria-label="Choose day"></nav><div id="content"></div><footer>✓ Checkmarks stay saved on this device and reset automatically each Sunday (local time). No missed-task backlog. For reliable saving on iPhone, host this HTML as a webpage and add it to your Home Screen in Safari; opening a downloaded file directly may not preserve progress consistently.</footer></main><script>
-const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const daily=[['Kitchen usable','Shared','Load dishes and leave the main prep space usable'],['Robot paths clear','Clay + boys','Only clear the robot route; toys elsewhere are fine'],['One calm counter','You','Two minutes max; contain clutter rather than organize']];
-const weekly={0:[['Wash & dry clothes — 3 loads','Clay','No folding required'],['Wash & dry towels — 1 load','Clay','Stage clean laundry for Monday'],['Trash & recycling','Clay','Take out before collection'],['Quick clutter basket reset','Shared','10 minutes max; stop when time is up']],1:[['Change beds with spare sheet sets','Helper','Two-hour helper visit'],['Fold and put away clean laundry','Helper','Sunday clothes and towels']],2:[['Wash & dry used sheets — 2–3 loads','Clay','Store clean sets for next Monday']],3:[['Paperwork & packages — 10 minutes','Shared','Recycle, file actionable items, break down boxes']],4:[],5:[['Cleaner prep (every other Friday, if scheduled)','Shared','Clear surfaces enough for cleaners; skip on off weeks']],6:[]};
-const today=new Date();let selected=today.getDay();
-function sundayKey(d){let x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-x.getDay());return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`}
-const week=sundayKey(today);const storageKey='home-reset-v1-'+week;let state={};try{state=JSON.parse(localStorage.getItem(storageKey)||'{}')}catch(e){};try{Object.keys(localStorage).filter(k=>k.startsWith('home-reset-v1-')&&k!==storageKey).forEach(k=>localStorage.removeItem(k))}catch(e){}
-function save(){try{localStorage.setItem(storageKey,JSON.stringify(state))}catch(e){}}
-function item(task,id){const checked=!!state[id];return `<label class="task"><input type="checkbox" data-id="${id}" ${checked?'checked':''}><span><div class="name">${task[0]}</div><div class="who">${task[1]} · ${task[2]}</div></span></label>`}
-function render(){document.getElementById('weekBadge').textContent='Resets Sundays';const sun=new Date(today.getFullYear(),today.getMonth(),today.getDate()-today.getDay());const sat=new Date(sun);sat.setDate(sat.getDate()+6);document.getElementById('weekRange').textContent=`Week of ${sun.toLocaleDateString(undefined,{month:'short',day:'numeric'})} – ${sat.toLocaleDateString(undefined,{month:'short',day:'numeric'})}`;
-document.getElementById('days').innerHTML=names.map((n,i)=>{let total=daily.length+weekly[i].length;let done=[...daily.map((_,j)=>`d${i}-${j}`),...weekly[i].map((_,j)=>`w${i}-${j}`)].filter(k=>state[k]).length;return `<button class="day ${selected===i?'active':''}" data-day="${i}">${n}<small>${done}/${total}</small></button>`}).join('');
-const ids=[...daily.map((_,j)=>`d${selected}-${j}`),...weekly[selected].map((_,j)=>`w${selected}-${j}`)];const done=ids.filter(id=>state[id]).length;const total=ids.length;
-document.getElementById('content').innerHTML=`<section class="section"><h2>${names[selected]} · Daily minimum</h2><div class="hint">A functional home, not a perfect one</div>${daily.map((t,j)=>item(t,`d${selected}-${j}`)).join('')}</section><section class="section"><h2>${names[selected]} · Weekly rhythm</h2><div class="hint">Batch tasks and delegated completion</div>${weekly[selected].length?weekly[selected].map((t,j)=>item(t,`w${selected}-${j}`)).join(''):'<div class="empty">Nothing extra today. Enjoy the breathing room.</div>'}</section><section class="section"><div class="bottom"><strong>${done} of ${total} done</strong><span>${done===total?'Enough for today ✨':'Small steps count'}</span></div><div class="progress"><div class="fill" style="width:${done/total*100}%"></div></div><div class="bottom"><span>Checkmarks are just for this week.</span><button class="link" id="clearDay">Clear this day</button></div></section><div class="note">Permission slip: You do not have to catch up on yesterday. Just do today's minimum.</div>`;
-document.querySelectorAll('input[data-id]').forEach(el=>el.addEventListener('change',()=>{state[el.dataset.id]=el.checked;save();render()}));document.querySelectorAll('[data-day]').forEach(el=>el.addEventListener('click',()=>{selected=Number(el.dataset.day);render()}));document.getElementById('clearDay').addEventListener('click',()=>{ids.forEach(id=>delete state[id]);save();render()});}
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Home Reset">
+<meta name="theme-color" content="#f6f3ed"><title>Home Reset</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#26392e;background:#f6f3ed;color-scheme:light}
+*{box-sizing:border-box}body{margin:0}main{max-width:650px;margin:auto;padding:calc(20px + env(safe-area-inset-top)) 17px calc(45px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}h1{font-size:29px;letter-spacing:-.9px;margin:0 0 5px}p{color:#67766c;margin:0;line-height:1.5}
+.badge{font-size:11px;background:#e0e9df;padding:8px 10px;border-radius:30px;white-space:nowrap}.week{color:#718075;font-size:13px;margin:17px 0 13px}
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-bottom:13px}.day{border:0;border-radius:11px;background:#e7eae4;color:#45564a;padding:10px 1px;font-size:12px;font-weight:700}.day small{display:block;font-size:10px;margin-top:5px;opacity:.8}.day.active{background:#365c49;color:white}.day.today:not(.active){outline:2px solid #94ac9b;outline-offset:-2px}
+.section{background:white;border:1px solid #e6eae3;border-radius:17px;padding:17px;margin:12px 0;box-shadow:0 3px 14px #263a2808}h2{font-size:17px;margin:0 0 4px}.hint{font-size:12px;color:#748278;margin:0 0 11px;line-height:1.4}
+.task{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid #edf0ea;cursor:pointer}.task:first-of-type{border-top:0}.task input{width:23px;height:23px;margin:0;accent-color:#365c49;flex-shrink:0}.name{font-size:15px;line-height:1.35}.detail{font-size:12px;color:#78867b;margin-top:4px;line-height:1.4}.task:has(input:checked) .name{text-decoration:line-through;color:#8c998e}
+.bar{height:8px;border-radius:10px;background:#e6ece5;overflow:hidden;margin:12px 0}.fill{height:100%;background:#5d9271;transition:width .2s}.between{display:flex;justify-content:space-between;gap:10px;align-items:center}.muted{color:#77857a;font-size:12px}.note{background:#e9efe7;border-radius:12px;padding:13px;font-size:13px;line-height:1.5;margin:15px 0}
+button{font-family:inherit;cursor:pointer}.link{border:0;background:transparent;color:#365c49;font-weight:700;font-size:12px;padding:9px 0}.controls{display:flex;gap:9px;flex-wrap:wrap;margin:9px 0 14px}.chip{border:1px solid #cbd9cd;border-radius:30px;padding:9px 12px;background:#fff;color:#365c49;font-size:12px;font-weight:650}.chip.on{background:#365c49;color:white;border-color:#365c49}.empty{font-size:13px;color:#78867b;padding:6px 0}.footer{font-size:12px;color:#79867b;line-height:1.55;margin-top:18px}
+@media(prefers-color-scheme:dark){:root{background:#1b251f;color:#e8eee8;color-scheme:dark}.section{background:#29362d;border-color:#405045}.day{background:#354338;color:#e8eee8}.day.active,.chip.on{background:#79a98a;color:#132117}.badge,.note{background:#35483a}.chip{background:#29362d;border-color:#516555;color:#e5eee6}.task{border-color:#405045}.bar{background:#425247}p,.hint,.week,.footer,.muted,.detail{color:#b1bfb4}.link{color:#a9d4b3}}
+</style></head>
+<body><main>
+<header><div><h1>Home Reset 🌿</h1><p>Less catching up. More breathing room.</p></div><span class="badge">Resets Sundays</span></header>
+<div class="week" id="weekRange"></div><nav class="days" id="days" aria-label="Choose day"></nav>
+<div class="controls"><button class="chip" id="cleanerToggle" type="button"></button><button class="chip" id="winterToggle" type="button"></button></div>
+<div id="content"></div>
+<div class="note">A functional home counts. No streaks, no overdue tasks, and no catching up on yesterday.</div>
+<div class="footer">Checkmarks are saved on this device. A new week begins every Sunday in your local time. Cleaner weeks alternate automatically once you set the correct week; winter mode can be changed anytime. Other devices won't share checkmarks.</div>
+</main>
+<script>
+"use strict";
+const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const T=(id,name,detail="")=>({id,name,detail});
+const base={
+ morning:[
+ T("dishwasher-unload","Unload dishwasher","Early morning; separate from loading."),
+ T("bottle-unload","Unload bottle washer","Set up clean bottles for the day."),
+ T("upstairs-sweep","5-minute upstairs sweep","Straighten beds, hang bathroom towels, pick up stray trash, and gather dishes and recycling onto the upstairs tray.")
+ ],
+ bus:[T("desk-and-tray","Before Jack's bus: desk + downstairs trip","Tidy your desk; bring the tray contents downstairs and put dishes/recycling where they belong.")],
+ evening:[
+ T("dishwasher-load","Load dishwasher","End-of-day kitchen close."),
+ T("bottle-load","Load bottle washer","Evening reset for tomorrow."),
+ T("robot-paths","Clear robot vacuum paths","Only clear the robot's route; no need to put every toy away."),
+ T("calm-counter","Reset one visible counter","Two minutes; contain clutter, don't start an organizing project."),
+ T("downstairs-pass","Quick downstairs pickup","Look specifically for stray dishes and visible clutter; no deep cleaning.")
+ ]};
+const weekly={
+ 0:[{title:"Sunday setup",hint:"Laundry is a batch process, not a daily chore.",tasks:[
+ T("sun-clothes","Wash and dry family clothes (about 3 loads)","Stage clean laundry for Monday; no folding."),
+ T("sun-towels","Wash and dry towels (about 1 load)","Stage for Monday's helper."),
+ T("sun-roast","Roast chicken and vegetables","Winter routine; use Saturday's prep.")
+ ]}],
+ 1:[{title:"Monday helper",hint:"Two-hour visit; laundry and beds get finished.",tasks:[
+ T("mon-sheets","Change beds using clean spare sheet sets"),
+ T("mon-putaway","Fold and put away clean clothes and towels")
+ ]}],
+ 2:[{title:"Tuesday linens",hint:"Replenish the clean sheet sets for next Monday.",tasks:[
+ T("tue-sheets","Wash and dry used sheets (2–3 loads)","Store clean sets; each bed has two sets.")
+ ]}],
+ 3:[{title:"Wednesday reset",hint:"A little attention before things accumulate.",tasks:[
+ T("wed-papers","10-minute paper and package pass","Handle actionable papers, boxes, and random items without starting a big project.")
+ ]}],
+ 4:[{title:"Thursday planning",hint:"Make next week easier before the weekend starts.",tasks:[
+ T("thu-calendar","Review next week's calendar","Look for unusual evenings, school events, and scheduling conflicts."),
+ T("thu-meals","Plan next week's meals","Check freezer inventory before deciding what to cook."),
+ T("thu-groceries","Finalize Saturday morning grocery delivery","Place or update the order.")
+ ]}],
+ 5:[{title:"Friday",hint:"Keep the morning light.",tasks:[]}],
+ 6:[{title:"Saturday reset",hint:"Small spaces, finite timers.",tasks:[
+ T("sat-basket","Empty and process the clutter basket"),
+ T("sat-bedbath","10-minute bedroom and bathroom tidy","Set a timer and stop when it rings."),
+ T("sat-groceries","Receive and put away morning grocery delivery")
+ ]},{title:"Saturday afternoon · meal prep",hint:"Batch cooking protects busy weekdays.",tasks:[
+ T("sat-muffins","Bake chocolate chocolate-chip muffins for the kids")
+ ]}]
+};
+const cleanerTasks={
+ 3:[{title:"Cleaner week · Wednesday night",hint:"Prepare the kitchen early so Thursday isn't a marathon.",tasks:[
+ T("clean-wed-kitchen","Heavier kitchen tidy","Clear counters, deal with accumulated kitchen clutter, and put away miscellaneous items.")
+ ]}],
+ 4:[{title:"Cleaner week · Thursday night",hint:"The real deadline is Thursday night, not Friday morning.",tasks:[
+ T("clean-thu-toys","Put away ALL toys","Full toy pickup, not just robot paths."),
+ T("clean-thu-ready","Get the house fully cleaner-ready","Clear surfaces and access areas before the early Friday visit.")
+ ]}],
+ 5:[{title:"Cleaner week · Friday morning",hint:"Everything substantial was done Thursday night.",tasks:[
+ T("clean-fri-breakfast","Final breakfast dishes and cleanup","Leave the kitchen ready for the cleaners.")
+ ]}]
+};
+const winterSaturday=[
+ T("winter-soup","Make soup, stew, or chili","One batch for easy weekday meals."),
+ T("winter-chicken-prep","Prep Sunday's roast chicken and vegetables"),
+ T("winter-freezer","Make a freezer-friendly meal","Meatballs, enchiladas, or chicken pot pie filling; check freezer space first.")
+];
+function sunday(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-x.getDay());return x}
+function keyDate(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
+function parseDate(s){const a=s.split("-").map(Number);return new Date(a[0],a[1]-1,a[2])}
+function load(k,fallback){try{const x=JSON.parse(localStorage.getItem(k));return x===null?fallback:x}catch(e){return fallback}}
+function store(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let now=new Date(),weekStart=sunday(now),weekKey=keyDate(weekStart),selected=now.getDay();
+let state=load("home-reset-v2-"+weekKey,{});
+let prefs=load("home-reset-v2-prefs",{winter:[10,11,0,1,2].includes(now.getMonth()),cleanerAnchor:null,cleanerThisWeek:false});
+function isCleanerWeek(){
+ if(!prefs.cleanerAnchor)return !!prefs.cleanerThisWeek;
+ const anchor=parseDate(prefs.cleanerAnchor);
+ const weeks=Math.round((weekStart-anchor)/604800000);
+ return Math.abs(weeks)%2===0;
+}
+function updateWeek(){
+ const d=new Date(),k=keyDate(sunday(d));
+ if(k!==weekKey){now=d;weekStart=sunday(d);weekKey=k;state=load("home-reset-v2-"+weekKey,{});selected=d.getDay()}
+}
+function sectionsFor(day){
+ let groups=[{title:"Morning",hint:"Start before work; one small routine at a time.",tasks:base.morning},
+ {title:"Before Jack's bus",hint:"A natural transition out of your workspace.",tasks:base.bus},
+ {title:"Evening",hint:"Close the kitchen and make the robot's path accessible.",tasks:base.evening}];
+ const extra=weekly[day].map(g=>({...g,tasks:g.tasks.filter(t=>t.id!=="sun-roast"||prefs.winter)}));
+ if(day===6&&prefs.winter)extra[1].tasks=[...extra[1].tasks,...winterSaturday];
+ groups.push(...extra.filter(g=>g.tasks.length));
+ if(isCleanerWeek()&&cleanerTasks[day])groups.push(...cleanerTasks[day]);
+ return groups;
+}
+function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function taskHtml(t,day){const id=day+":"+t.id;return `<label class="task"><input type="checkbox" data-id="${esc(id)}" ${state[id]?"checked":""}><span><div class="name">${esc(t.name)}</div>${t.detail?`<div class="detail">${esc(t.detail)}</div>`:""}</span></label>`}
+function render(){
+ updateWeek();
+ const end=new Date(weekStart);end.setDate(end.getDate()+6);
+ document.getElementById("weekRange").textContent="Week of "+weekStart.toLocaleDateString(undefined,{month:"short",day:"numeric"})+" – "+end.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+ document.getElementById("cleanerToggle").textContent=isCleanerWeek()?"✓ Cleaner week · tap to change":"Cleaner week: off · tap to change";
+ document.getElementById("cleanerToggle").classList.toggle("on",isCleanerWeek());
+ document.getElementById("cleanerToggle").setAttribute("aria-pressed",String(isCleanerWeek()));
+ document.getElementById("winterToggle").textContent=prefs.winter?"✓ Winter cooking":"Winter cooking: off";
+ document.getElementById("winterToggle").classList.toggle("on",prefs.winter);
+ document.getElementById("winterToggle").setAttribute("aria-pressed",String(prefs.winter));
+ document.getElementById("days").innerHTML=DAYS.map((name,d)=>{
+ const ids=sectionsFor(d).flatMap(g=>g.tasks.map(t=>d+":"+t.id));
+ const n=ids.filter(id=>state[id]).length;
+ return `<button type="button" data-day="${d}" class="day ${d===selected?"active":""} ${d===new Date().getDay()?"today":""}" aria-label="${name}, ${n} of ${ids.length} complete" aria-pressed="${d===selected}">${name}<small>${n}/${ids.length}</small></button>`;
+ }).join("");
+ const groups=sectionsFor(selected),ids=groups.flatMap(g=>g.tasks.map(t=>selected+":"+t.id)),done=ids.filter(id=>state[id]).length;
+ document.getElementById("content").innerHTML=groups.map(g=>`<section class="section"><h2>${esc(g.title)}</h2><div class="hint">${esc(g.hint)}</div>${g.tasks.map(t=>taskHtml(t,selected)).join("")}</section>`).join("")+
+ `<section class="section"><div class="between"><strong>${done} of ${ids.length} complete</strong><span class="muted">${done===ids.length?"Enough for today ✨":"Small steps count"}</span></div><div class="bar"><div class="fill" style="width:${ids.length?done/ids.length*100:0}%"></div></div><div class="between"><span class="muted">Only this week's checkmarks count.</span><button class="link" id="clearDay" type="button">Clear this day</button></div></section>`;
+ document.querySelectorAll("input[data-id]").forEach(el=>el.addEventListener("change",()=>{state[el.dataset.id]=el.checked;store("home-reset-v2-"+weekKey,state);render()}));
+ document.querySelectorAll("button[data-day]").forEach(el=>el.addEventListener("click",()=>{selected=Number(el.dataset.day);render()}));
+ document.getElementById("clearDay").addEventListener("click",()=>{ids.forEach(id=>delete state[id]);store("home-reset-v2-"+weekKey,state);render()});
+}
+document.getElementById("cleanerToggle").addEventListener("click",()=>{
+ const newValue=!isCleanerWeek();
+ if(newValue){prefs.cleanerAnchor=weekKey;prefs.cleanerThisWeek=true}
+ else{const prev=new Date(weekStart);prev.setDate(prev.getDate()-7);prefs.cleanerAnchor=keyDate(prev);prefs.cleanerThisWeek=false}
+ store("home-reset-v2-prefs",prefs);render();
+});
+document.getElementById("winterToggle").addEventListener("click",()=>{prefs.winter=!prefs.winter;store("home-reset-v2-prefs",prefs);render()});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)render()});
+window.addEventListener("focus",render);
 render();
 </script></body></html>
